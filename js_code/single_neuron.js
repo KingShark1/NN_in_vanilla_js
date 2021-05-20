@@ -9,7 +9,7 @@ var Unit = function(value, grad){
 
 var multiplyGate = function(){ };
 multiplyGate.prototype = {
-  forward: function(u0, y1){
+  forward: function(u0, u1){
     //store pointers to input Units u0 and u1 and
     //output unit utop
     this.u0 = u0;
@@ -53,3 +53,47 @@ sigmoidGate.prototype = {
     this.u0.grad += (s * (1 - s)) * this.utop.grad;
   }
 }
+
+var a = new Unit(1.0, 0.0);
+var b = new Unit(2.0, 0.0);
+var c = new Unit(-3.0, 0.0);
+var x = new Unit(-1.0, 0.0);
+var y = new Unit(3.0, 0.0);
+
+//creating gates
+var mulg0 = new multiplyGate();
+var mulg1 = new multiplyGate();
+var addg0 = new addGate();
+var addg1 = new addGate();
+var sg0 = new sigmoidGate();
+
+//do the forward pass
+var forwardNeuron = function() {
+  ax = mulg0.forward(a, x);
+  by = mulg1.forward(b, y);
+  axpby = addg0.forward(ax, by);
+  axpbypc = addg1.forward(axpby, c);
+  s = sg0.forward(axpbypc);
+};
+forwardNeuron();
+
+console.log('cicuit output: ' + s.value);
+
+//simply iterating in reverse order to backprop
+s.grad = 1.0;
+sg0.backward();
+addg1.backward();
+addg0.backward();
+mulg1.backward();
+mulg0.backward();
+
+var step_size = 0.01;
+a.value += step_size * a.grad; // a.grad is -0.105
+b.value += step_size * b.grad; // b.grad is 0.315
+c.value += step_size * c.grad; // c.grad is 0.105
+x.value += step_size * x.grad; // x.grad is 0.105
+y.value += step_size * y.grad; // y.grad is 0.210
+
+forwardNeuron();
+console.log('circuit output after one backprop: ' + s.value); // prints 0.8825
+
